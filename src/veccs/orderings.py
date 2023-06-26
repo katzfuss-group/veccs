@@ -257,5 +257,5 @@ def maxmin_pred_cpp(locs: np.ndarray, pred_locs: np.ndarray) -> np.ndarray:
 
     first_idx = find_closest_to_mean(locs)
 
-    ord_list = _maxmin_var_cpp(locs_all, 1.0, first_idx, npred)[0]
+    ord_list = _maxmin_var_cpp(locs_all, 1.0005, first_idx, npred)[0]
     return np.asarray(ord_list)
