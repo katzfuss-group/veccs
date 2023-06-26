@@ -20,13 +20,13 @@ def test_maxmin_naive(locations_2d):
     dist_mat = scipy.spatial.distance.cdist(locations_2d, locations_2d)
     ord, _ = maxmin_naive(dist_mat, 0)
     correct_order = np.array([0, 4, 3, 2, 1])
-    assert np.alltrue(correct_order == ord)
+    assert np.all(correct_order == ord)
 
 
 def test_maxmin_cpp(locations_2d):
     ord = maxmin_cpp(locations_2d)
     correct_order = np.array([0, 4, 3, 2, 1])
-    assert np.alltrue(correct_order == ord)
+    assert np.all(correct_order == ord)
 
 
 def test_maxmin():
@@ -37,7 +37,7 @@ def test_maxmin():
 
     ord1 = maxmin_cpp(locs)
 
-    assert np.alltrue(ord0 == ord1)
+    assert np.all(ord0 == ord1)
 
 
 def test_cond_set_naive(locations_2d):
@@ -55,7 +55,7 @@ def test_cond_set_naive(locations_2d):
         ]
     )
 
-    assert np.alltrue(correct_result == cond_set)
+    assert np.all(correct_result == cond_set)
 
 
 def test_cond_set_faiss(locations_2d):
@@ -72,13 +72,13 @@ def test_cond_set_faiss(locations_2d):
             [2, 0],
         ]
     )
-    assert np.alltrue(correct_result == cond_set)
+    assert np.all(correct_result == cond_set)
 
 
 def test_maxmin_pred_one_cpp(locations_2d):
     ord = maxmin_pred_cpp(locations_2d, locations_2d[:1, :] + 1)
     correct_order = np.array([0, 4, 3, 2, 1, 5])
-    assert np.alltrue(correct_order == ord)
+    assert np.all(correct_order == ord)
 
 
 def test_maxmin_pred_cpp(locations_2d):
@@ -93,4 +93,4 @@ def test_maxmin_pred_cpp(locations_2d):
     )
     ord = maxmin_pred_cpp(locations_2d, locations_2d + shift)
     correct_order = np.array([0, 4, 3, 2, 1, 5, 6, 7, 8, 9])
-    assert np.alltrue(correct_order == ord)
+    assert np.all(correct_order == ord)
