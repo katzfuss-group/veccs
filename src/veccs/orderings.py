@@ -8,6 +8,7 @@ import scipy.spatial.distance
 import sklearn.neighbors
 
 from .maxmin_cpp import maxmin_cpp as _maxmin_cpp
+from .maxmin_var_cpp import maxmin_var_cpp as _maxmin_var_cpp
 
 
 def find_closest_to_mean(locs: np.ndarray) -> np.intp:
@@ -219,3 +220,42 @@ def find_nns_l2(locs: np.ndarray, max_nn: int = 10) -> np.ndarray:
     if any(NN[:, 0] != np.arange(n)):
         warnings.warn("There are very close locations and NN[:, 0] != np.arange(n)\n")
     return NN.astype(np.int64)[:, 1:]
+
+
+def maxmin_pred_cpp(locs: np.ndarray, pred_locs: np.ndarray) -> np.ndarray:
+    """
+    Returns a maxmin ordering based on the Euclidean distance where the
+    locations in locs are preceeding the locations in pred_locs.
+
+    Parameters
+    ----------
+    locs
+        A m by n array of m observations in an n-dimensional space
+
+    pred_locs
+        A k by n array of k observations in an n-dimensional space
+
+
+    Returns
+    -------
+    np.ndarray
+        Returns the indices of the permutation for the cocatenated array of locs
+        and pred_locs, e.g., np.concatenate((locs, pred_locs), axis=0).
+
+    Notes
+    -----
+    The implementation is based on C++ implementation provided by Myeongjong
+    Kang which also can be found in [1]_.
+
+    References
+    ----------
+    .. [1] https://github.com/katzfuss-group/variationalVecchia/blob/
+           4ce03ddb53f3006b5cd1d1e3fe0268744e408039/external/maxmin_cpp/maxMin.cpp
+    """
+    locs_all = np.concatenate((locs, pred_locs), axis=0)
+    npred = pred_locs.shape[0]
+
+    first_idx = find_closest_to_mean(locs)
+
+    ord_list = _maxmin_var_cpp(locs_all, 1.0, first_idx, npred)[0]
+    return np.asarray(ord_list)
