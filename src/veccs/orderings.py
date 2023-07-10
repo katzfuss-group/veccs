@@ -7,9 +7,9 @@ import scipy
 import scipy.spatial.distance
 import sklearn.neighbors
 
+from .maxmin_ancestor_cpp import maxmin_ancestor as _maxmin_ancestor_cpp
 from .maxmin_cpp import maxmin_cpp as _maxmin_cpp
 from .maxmin_var_cpp import maxmin_var_cpp as _maxmin_var_cpp
-from .maxmin_ancestor_cpp import maxmin_ancestor as _maxmin_ancestor_cpp
 
 
 def find_closest_to_mean(locs: np.ndarray) -> np.intp:
@@ -262,8 +262,9 @@ def maxmin_pred_cpp(locs: np.ndarray, pred_locs: np.ndarray) -> np.ndarray:
     return np.asarray(ord_list)
 
 
-def maxmin_cpp_ancestor(locs: np.ndarray, pred_locs: np.ndarray, rho: float) \
-    -> np.ndarray:
+def maxmin_cpp_ancestor(
+    locs: np.ndarray, pred_locs: np.ndarray, rho: float
+) -> np.ndarray:
     """
     Returns a maxmin ordering based on the Euclidean distance where the
     locations in locs are preceeding the locations in pred_locs.
@@ -298,7 +299,6 @@ def maxmin_cpp_ancestor(locs: np.ndarray, pred_locs: np.ndarray, rho: float) \
     """
     locs_all = np.concatenate((locs, pred_locs), axis=0)
     npred = pred_locs.shape[0]
-    n = locs_all.shape[0]
 
     first_idx = find_closest_to_mean(locs)
 
@@ -309,4 +309,3 @@ def maxmin_cpp_ancestor(locs: np.ndarray, pred_locs: np.ndarray, rho: float) \
     sparsity = sparsity[:, sparsity[1] >= 0]
     maxmin_order = orderObj[0]
     return maxmin_order, sparsity, ancestorApprox
-

@@ -6,9 +6,9 @@ from veccs.orderings import (
     find_nns_l2,
     find_nns_naive,
     maxmin_cpp,
+    maxmin_cpp_ancestor,
     maxmin_naive,
     maxmin_pred_cpp,
-    maxmin_cpp_ancestor,
 )
 
 
