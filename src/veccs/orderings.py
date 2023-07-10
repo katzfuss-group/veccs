@@ -264,7 +264,7 @@ def maxmin_pred_cpp(locs: np.ndarray, pred_locs: np.ndarray) -> np.ndarray:
 
 def maxmin_cpp_ancestor(
     locs: np.ndarray, pred_locs: np.ndarray, rho: float
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Returns a maxmin ordering based on the Euclidean distance where the
     locations in locs are preceeding the locations in pred_locs.
