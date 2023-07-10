@@ -8,6 +8,7 @@ from veccs.orderings import (
     maxmin_cpp,
     maxmin_naive,
     maxmin_pred_cpp,
+    maxmin_cpp_ancestor,
 )
 
 
@@ -94,3 +95,19 @@ def test_maxmin_pred_cpp(locations_2d):
     ord = maxmin_pred_cpp(locations_2d, locations_2d + shift)
     correct_order = np.array([0, 4, 3, 2, 1, 5, 6, 7, 8, 9])
     assert np.all(correct_order == ord)
+
+
+def test_maxmin_cpp_ancestor(locations_2d):
+    shift = np.array(
+        [
+            [0, 100.0],
+            [0, 50.0],
+            [0, 77.0],
+            [0, 88.0],
+            [0, 95.5],
+        ]
+    )
+    ret_obj = maxmin_cpp_ancestor(locations_2d, locations_2d + shift, 100.0)
+    ord = ret_obj[0]
+    correct_order = np.array([0, 4, 3, 2, 1, 5, 6, 7, 8, 9])
+    assert np.all(correct_order == ord) and np.all(ret_obj[1] == ret_obj[2])
