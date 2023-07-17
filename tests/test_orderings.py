@@ -108,6 +108,7 @@ def test_maxmin_cpp_ancestor(locations_2d):
         ]
     )
     ret_obj = maxmin_cpp_ancestor(locations_2d, locations_2d + shift, 100.0)
-    ord = ret_obj[0]
+    ord = ret_obj.maximin_order
     correct_order = np.array([0, 4, 3, 2, 1, 5, 6, 7, 8, 9])
-    assert np.all(correct_order == ord) and np.all(ret_obj[1] == ret_obj[2])
+    assert np.all(correct_order == ord)
+    assert np.all(ret_obj.sparsity == ret_obj.ancestor_set_reduced)

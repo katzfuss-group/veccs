@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// The code is an adaptation of [1] and based on a C++ implementation of Myeongjong Kang.                                                 //
+//                                                                                                                                        //
+//                                                                                                                                        //
+// [1] https://github.com/katzfuss-group/variationalVecchia/blob/4ce03ddb53f3006b5cd1d1e3fe0268744e408039/external/maxmin_cpp/maxMin.cpp  //
+//                                                                                                                                        //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #include <cmath>
 #include <cstring>
 #ifdef _WIN32
@@ -11,6 +19,7 @@
 #include <pybind11/numpy.h>
 
 namespace py = pybind11;
+
 using namespace std;
 
 struct Node
@@ -469,11 +478,12 @@ output predSortSparse(signed int NTrain, signed int NTest, double rho, function<
 
 // @return a tuple of P, revP, rowval, colval, maskSmall and distances
 tuple<vector<int>, vector<int>, vector<int>, vector<int>, vector<bool>, vector<double>>
-  MaxMincpp(const py::array_t<double> &x, double rho, int initInd, int nTest=0)
+  maxmin_with_ancestor(const py::array_t<double> &x, double rho, int initInd, int nTest=0)
 {
     int n = x.shape(0);
     int nTrain = n - nTest;
-    std::function<double(int, int)> dist_func = [&x](int i, int j){
+
+    std::function<double(int, int)> dist2_func = [&x](int i, int j){
         auto sum = 0.0;
         for (auto k = 0; k < x.shape(1); k++) {
           auto diff = *x.data(i, k) - *x.data(j, k);
@@ -482,12 +492,14 @@ tuple<vector<int>, vector<int>, vector<int>, vector<int>, vector<bool>, vector<d
         }
         return sum;
     };
+
     output result;
     if(nTest == 0){
-      result = sortSparse(n, rho, dist_func, initInd);
+      result = sortSparse(n, rho, dist2_func, initInd);
     }else{
-      result = predSortSparse(nTrain, n - nTrain, rho, dist_func, initInd);
+      result = predSortSparse(nTrain, n - nTrain, rho, dist2_func, initInd);
     }
+
     vector<signed int> rowvalOut(result.rowval.size(), -1);
     for (unsigned long i = 0; i < result.rowval.size(); i++) {
       rowvalOut[i] = result.rowval[i].id;
@@ -501,13 +513,16 @@ tuple<vector<int>, vector<int>, vector<int>, vector<int>, vector<bool>, vector<d
     vector<bool> maskSmall(rowvalOut.size(), true);
     result.distances[0] = result.distances[1];
     for(int k = 0; k < rowvalOut.size(); k++)
-        if(sqrt(dist_func(result.P[rowvalOut[k]], result.P[colvalOut[k]])) > rho *
+        if(sqrt(dist2_func(result.P[rowvalOut[k]], result.P[colvalOut[k]])) > rho *
                 min(result.distances[rowvalOut[k]], result.distances[colvalOut[k]]))
             maskSmall[k] = false;
     return make_tuple(result.P, result.revP, rowvalOut, colvalOut, maskSmall, result.distances);
 }
 
 PYBIND11_MODULE(maxmin_ancestor_cpp, m) {
-  m.def("maxmin_ancestor", &MaxMincpp, "maxmin ordering used in the variational vecchia paper"
-    "that also computes the conditioning and reduced ancestor sets.");
+  m.def(
+    "maxmin_ancestor_cpp",
+    &maxmin_with_ancestor,
+    "maxmin ordering used in the variational vecchia paper that also computes the conditioning and reduced ancestor sets."
+  );
 }
