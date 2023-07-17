@@ -300,9 +300,9 @@ def maxmin_cpp_ancestor(
 
     Returns
     -------
-    maximin ordering
-    sparsity index pairs for the inverse Cholesky factor
-    the reduced ancestor set (similar format as the sparsity index pairs)
+    AncestorOrdering
+        An object holding the maximin ordering, the sparsity index pairs and the
+        reduced ancestor set.
 
     Notes
     -----
