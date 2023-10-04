@@ -6,6 +6,7 @@ from veccs.orderings import (
     find_nns_l2,
     find_nns_naive,
     maxmin_cpp,
+    maxmin_cpp_ancestor,
     maxmin_naive,
     maxmin_pred_cpp,
 )
@@ -94,3 +95,20 @@ def test_maxmin_pred_cpp(locations_2d):
     ord = maxmin_pred_cpp(locations_2d, locations_2d + shift)
     correct_order = np.array([0, 4, 3, 2, 1, 5, 6, 7, 8, 9])
     assert np.all(correct_order == ord)
+
+
+def test_maxmin_cpp_ancestor(locations_2d):
+    shift = np.array(
+        [
+            [0, 100.0],
+            [0, 50.0],
+            [0, 77.0],
+            [0, 88.0],
+            [0, 95.5],
+        ]
+    )
+    ret_obj = maxmin_cpp_ancestor(locations_2d, locations_2d + shift, 100.0)
+    ord = ret_obj.maximin_order
+    correct_order = np.array([0, 4, 3, 2, 1, 5, 6, 7, 8, 9])
+    assert np.all(correct_order == ord)
+    assert np.all(ret_obj.sparsity == ret_obj.ancestor_set_reduced)

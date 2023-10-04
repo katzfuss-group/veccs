@@ -1,5 +1,6 @@
 import warnings
 from collections.abc import Callable
+from dataclasses import dataclass
 
 import faiss
 import numpy as np
@@ -7,8 +8,8 @@ import scipy
 import scipy.spatial.distance
 import sklearn.neighbors
 
+from .maxmin_ancestor_cpp import maxmin_ancestor_cpp as _maxmin_ancestor_cpp
 from .maxmin_cpp import maxmin_cpp as _maxmin_cpp
-from .maxmin_var_cpp import maxmin_var_cpp as _maxmin_var_cpp
 
 
 def find_closest_to_mean(locs: np.ndarray) -> np.intp:
@@ -257,5 +258,76 @@ def maxmin_pred_cpp(locs: np.ndarray, pred_locs: np.ndarray) -> np.ndarray:
 
     first_idx = find_closest_to_mean(locs)
 
-    ord_list = _maxmin_var_cpp(locs_all, 1.0005, first_idx, npred)[0]
+    ord_list = _maxmin_ancestor_cpp(locs_all, 1.0005, first_idx, npred)[0]
     return np.asarray(ord_list)
+
+
+@dataclass
+class AncestorOrdering:
+    maximin_order: np.ndarray
+    """
+    The indices of the permutation for the cocatenated array of locs
+        and pred_locs, e.g., np.concatenate((locs, pred_locs), axis=0).
+    """
+    sparsity: np.ndarray
+    """
+    sparsity index pairs for the inverse Cholesky factor
+    """
+    ancestor_set_reduced: np.ndarray
+    """
+    the reduced ancestor set (similar format as the sparsity index pairs)
+    """
+
+
+def maxmin_cpp_ancestor(
+    locs: np.ndarray, pred_locs: np.ndarray, rho: float
+) -> AncestorOrdering:
+    """
+    Returns a maxmin ordering based on the Euclidean distance where the
+    locations in locs are preceeding the locations in pred_locs.
+
+    Parameters
+    ----------
+    locs
+        A m by n array of m observations in an n-dimensional space
+
+    pred_locs
+        A k by n array of k observations in an n-dimensional space
+
+    rho
+        A float value controling the radius of conditioning set and reduced
+        ancestor set
+
+    Returns
+    -------
+    AncestorOrdering
+        An object holding the maximin ordering, the sparsity index pairs and the
+        reduced ancestor set.
+
+    Notes
+    -----
+    The implementation is based on C++ implementation provided by Myeongjong
+    Kang which also can be found in [1]_.
+
+    References
+    ----------
+    .. [1] https://github.com/katzfuss-group/variationalVecchia/blob/
+           4ce03ddb53f3006b5cd1d1e3fe0268744e408039/external/maxmin_cpp/maxMin.cpp
+    """
+    locs_all = np.concatenate((locs, pred_locs), axis=0)
+    npred = pred_locs.shape[0]
+
+    first_idx = find_closest_to_mean(locs)
+
+    orderObj = _maxmin_ancestor_cpp(locs_all, rho, first_idx, npred)
+    ancestorApprox = np.array([orderObj[3], orderObj[2]])
+    sparsity = ancestorApprox[:, orderObj[4]]
+    ancestorApprox = ancestorApprox[:, ancestorApprox[1] >= 0]
+    sparsity = sparsity[:, sparsity[1] >= 0]
+    maxmin_order = orderObj[0]
+    ordering = AncestorOrdering(
+        maximin_order=maxmin_order,
+        sparsity=sparsity,
+        ancestor_set_reduced=ancestorApprox,
+    )
+    return ordering

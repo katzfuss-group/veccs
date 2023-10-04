@@ -478,7 +478,7 @@ output predSortSparse(signed int NTrain, signed int NTest, double rho, function<
 
 // @return a tuple of P, revP, rowval, colval, maskSmall and distances
 tuple<vector<int>, vector<int>, vector<int>, vector<int>, vector<bool>, vector<double>>
-  maxmin_variational(const py::array_t<double> &x, double rho, int initInd, int nTest=0)
+  maxmin_with_ancestor(const py::array_t<double> &x, double rho, int initInd, int nTest=0)
 {
     int n = x.shape(0);
     int nTrain = n - nTest;
@@ -519,32 +519,10 @@ tuple<vector<int>, vector<int>, vector<int>, vector<int>, vector<bool>, vector<d
     return make_tuple(result.P, result.revP, rowvalOut, colvalOut, maskSmall, result.distances);
 }
 
-// std::vector<double> maxmin_variational2(const py::array_t<double> &x)
-// {
-
-//     std::function<double(int, int)> dist2_func = [&x](int i, int j){
-//         auto sum = 0.0;
-//         for (auto k = 0; k < x.shape(1); k++) {
-//           auto diff = *x.data(i, k) - *x.data(j, k);
-//           auto diff2 = diff * diff;
-//           sum += diff2;
-//         }
-//         // return sum;
-//         auto sum_sqrt = std::sqrt(sum);
-//         return sum_sqrt;
-//     };
-
-
-//     auto dim0 = x.shape(0);
-//     auto dim1 = x.shape(1);
-//     std::vector<double> first(dim0);
-//     for (int i = 0; i < dim0; i++) {
-//       first[i] = dist2_func(0, i);
-//     }
-
-//     return first;
-// }
-
-PYBIND11_MODULE(maxmin_var_cpp, m) {
-  m.def("maxmin_var_cpp", &maxmin_variational, "maxmin ordering used in the variational vecchia paper.");
+PYBIND11_MODULE(maxmin_ancestor_cpp, m) {
+  m.def(
+    "maxmin_ancestor_cpp",
+    &maxmin_with_ancestor,
+    "maxmin ordering used in the variational vecchia paper that also computes the conditioning and reduced ancestor sets."
+  );
 }

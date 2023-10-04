@@ -3,7 +3,7 @@ from setuptools import setup
 
 ext_modules = [
     Pybind11Extension("veccs.maxmin_cpp", ["src/_src/maxmin.cpp"]),
-    Pybind11Extension("veccs.maxmin_var_cpp", ["src/_src/maxmin_var.cpp"]),
+    Pybind11Extension("veccs.maxmin_ancestor_cpp", ["src/_src/maxmin_ancestor.cpp"]),
 ]
 
 setup(cmdclass={"build_ext": build_ext}, ext_modules=ext_modules)
