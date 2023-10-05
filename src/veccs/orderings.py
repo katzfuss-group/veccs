@@ -324,7 +324,7 @@ def maxmin_cpp_ancestor(
     sparsity = ancestorApprox[:, orderObj[4]]
     ancestorApprox = ancestorApprox[:, ancestorApprox[1] >= 0]
     sparsity = sparsity[:, sparsity[1] >= 0]
-    maxmin_order = orderObj[0]
+    maxmin_order = np.asarray(orderObj[0])
     ordering = AncestorOrdering(
         maximin_order=maxmin_order,
         sparsity=sparsity,
