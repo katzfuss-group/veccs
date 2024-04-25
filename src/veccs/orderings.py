@@ -151,6 +151,9 @@ def maxmin_cpp(locs: np.ndarray) -> np.ndarray:
 
     """
 
+    if not isinstance(locs, np.ndarray):
+        raise TypeError("locs must be a numpy array")
+
     idx = _maxmin_cpp(locs)
     return np.array(idx)
 
@@ -253,6 +256,13 @@ def maxmin_pred_cpp(locs: np.ndarray, pred_locs: np.ndarray) -> np.ndarray:
     .. [1] https://github.com/katzfuss-group/variationalVecchia/blob/
            4ce03ddb53f3006b5cd1d1e3fe0268744e408039/external/maxmin_cpp/maxMin.cpp
     """
+
+    if not isinstance(locs, np.ndarray):
+        raise TypeError("locs must be a numpy array")
+
+    if not isinstance(pred_locs, np.ndarray):
+        raise TypeError("pred_locs must be a numpy array")
+
     locs_all = np.concatenate((locs, pred_locs), axis=0)
     npred = pred_locs.shape[0]
 
@@ -314,6 +324,13 @@ def maxmin_cpp_ancestor(
     .. [1] https://github.com/katzfuss-group/variationalVecchia/blob/
            4ce03ddb53f3006b5cd1d1e3fe0268744e408039/external/maxmin_cpp/maxMin.cpp
     """
+
+    if not isinstance(locs, np.ndarray):
+        raise TypeError("locs must be a numpy array")
+
+    if not isinstance(pred_locs, np.ndarray):
+        raise TypeError("pred_locs must be a numpy array")
+
     locs_all = np.concatenate((locs, pred_locs), axis=0)
     npred = pred_locs.shape[0]
 

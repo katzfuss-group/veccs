@@ -1,3 +1,5 @@
+import typing
+
 import numpy as np
 import pytest
 import scipy.spatial.distance
@@ -112,3 +114,26 @@ def test_maxmin_cpp_ancestor(locations_2d):
     correct_order = np.array([0, 4, 3, 2, 1, 5, 6, 7, 8, 9])
     assert np.all(correct_order == ord)
     assert np.all(ret_obj.sparsity == ret_obj.ancestor_set_reduced)
+
+
+@typing.no_type_check
+def test_typechecks_cpp() -> None:
+    """
+    Test type checks for the numpy arguments in the cpp function wrappers.
+
+    Type checks are disabled for this function to test the runtime type checks.
+    """
+    with pytest.raises(TypeError):
+        maxmin_cpp(1.0)
+
+    with pytest.raises(TypeError):
+        maxmin_pred_cpp(1.0, np.array([[1.0]]))
+
+    with pytest.raises(TypeError):
+        maxmin_pred_cpp(np.array([[1.0]]), 1.0)
+
+    with pytest.raises(TypeError):
+        maxmin_cpp_ancestor(1.0, np.array([[1.0]]), 1.005)
+
+    with pytest.raises(TypeError):
+        maxmin_cpp_ancestor(np.array([[1.0]]), 1.0, 1.005)
