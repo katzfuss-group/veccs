@@ -45,7 +45,7 @@ def maxmin_naive(dist: np.ndarray, first: np.intp) -> tuple[np.ndarray, np.ndarr
     Parameters
     ----------
     dist
-        distrance matrix
+        distance matrix
     first
         Index of the observation that should be sorted first
 
@@ -54,7 +54,7 @@ def maxmin_naive(dist: np.ndarray, first: np.intp) -> tuple[np.ndarray, np.ndarr
     np.ndarray
         The minmax ordering
     np.ndarray
-        Array with the distrances to the location preceding in ordering
+        Array with the distances to the location preceding in ordering
     """
 
     n = dist.shape[0]
@@ -94,7 +94,7 @@ def find_nns_naive(
     locs
         an n x m array of ordered locations
     dist_fun
-        a distrance function
+        a distance function
     max_nn
         number of nearest neighbours
     kwargs
@@ -162,7 +162,7 @@ def find_nns_l2(locs: np.ndarray, max_nn: int = 10) -> np.ndarray:
     """
     Finds the max_nn nearest neighbors preceding in the ordering.
 
-    The distrance between neighbors is based on the Euclidien distrance.
+    The distance between neighbors is based on the Euclidien distance.
 
     This code is copied from https://github.com/katzfuss-group/BaTraMaSpa_py/
     blob/d75974961317a5b1e30d6f2fcc14862e1cb0535b/NNarray.py and adjusted to fit
