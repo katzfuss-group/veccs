@@ -7,7 +7,6 @@ import numpy as np
 import scipy
 import scipy.spatial.distance
 import sklearn.neighbors
-from typing import List
 
 from .maxmin_ancestor_cpp import maxmin_ancestor_cpp as _maxmin_ancestor_cpp
 from .maxmin_cpp import maxmin_cpp as _maxmin_cpp
@@ -350,20 +349,20 @@ def maxmin_cpp_ancestor(
     )
     return ordering
 
-def find_nns_l2_mf(locs_all: List[np.ndarray], max_nn: int = 10) -> np.ndarray:
-    
+
+def find_nns_l2_mf(locs_all: list[np.ndarray], max_nn: int = 10) -> np.ndarray:
     """
-    Finds the max_nn nearest neighbors preceding in the ordering for 
+    Finds the max_nn nearest neighbors preceding in the ordering for
     every fidelity, plus the max_nn nearest neighbors in in the preceding
     fidelity
 
     Parameters
     ----------
     locs_all
-        A list of observations in dimension p at different fidelities, 
+        A list of observations in dimension p at different fidelities,
         where each fidelity has n_1, ..., n_R observations. You have to
         pass the locations for each fidelity in order from lower to
-        highest fidelity. 
+        highest fidelity.
     max_nn
         The max number of nearest neighbors considered within or between
         each fidelity (could consider different numbers of nearest neighbors
@@ -373,7 +372,7 @@ def find_nns_l2_mf(locs_all: List[np.ndarray], max_nn: int = 10) -> np.ndarray:
     -------
     np.ndarray
         Returns the indices of the nearest neighbors, where -1 mean no nearest
-        neighbors. Indices go from 0 to N = n_1 + n_2 + ... + n_R. 
+        neighbors. Indices go from 0 to N = n_1 + n_2 + ... + n_R.
         The array is then of size N by 2 max_nn
     """
 
@@ -385,18 +384,18 @@ def find_nns_l2_mf(locs_all: List[np.ndarray], max_nn: int = 10) -> np.ndarray:
         ns[r] = locs.shape[0]
         NNr = find_nns_l2(locs, max_nn)
         if r == 0:
-            NN_preb = -np.ones((ns[r], max_nn), dtype=int) # no nearest neighbors on
+            NN_preb = -np.ones((ns[r], max_nn), dtype=int)  # no nearest neighbors on
             # previous fidelity level for first fidelity level, use -1 for mask
         else:
-            NNr = NNr + sum(ns[0:r]) # sum ns[0:r] because we need to 
+            NNr = NNr + sum(ns[0:r])  # sum ns[0:r] because we need to
             # start counting all fidelities til this one
-            NNr[NNr == sum(ns[0:r]) - 1] = -1 # revert ruining which are -1 
+            NNr[NNr == sum(ns[0:r]) - 1] = -1  # revert ruining which are -1
             # in previous line, kinda dumb hack but I guess it works
-            distM = scipy.spatial.distance.cdist(locs_all[r], locs_all[r-1])
+            distM = scipy.spatial.distance.cdist(locs_all[r], locs_all[r - 1])
             odrM = np.argsort(distM)
-            NN_preb = odrM[:,:max_nn] + sum(ns[0:r-1]) # we need to start
+            NN_preb = odrM[:, :max_nn] + sum(ns[0 : r - 1])  # we need to start
             # counting all fidelities til last one.
-        NN_list.append(NNr) 
+        NN_list.append(NNr)
         NN_preb_list.append(NN_preb)
 
     NN = np.vstack(NN_list)
@@ -404,4 +403,3 @@ def find_nns_l2_mf(locs_all: List[np.ndarray], max_nn: int = 10) -> np.ndarray:
     NN_all = np.hstack((NN, NN_preb))
 
     return NN_all
-
