@@ -6,6 +6,7 @@ import scipy.spatial.distance
 
 from veccs.orderings import (
     find_nns_l2,
+    find_nns_l2_mf,
     find_nns_naive,
     maxmin_cpp,
     maxmin_cpp_ancestor,
@@ -17,6 +18,15 @@ from veccs.orderings import (
 @pytest.fixture
 def locations_2d():
     return np.array([[0, 0], [-1, 0], [1.1, 0], [-1.9, 0], [2.3, 0]])
+
+
+@pytest.fixture
+def locations_2d_mf():
+    locs_lf = np.array([[-1, -1], [1.1, 1.1]])
+    locs_mf = np.array([[-1, -1], [1.1, 1.1], [0, 0]])
+    locs_hf = np.array([[0, 0], [-1, 0], [1.1, 0], [-1.9, 0], [2.3, 0]])
+    locs_all = [locs_lf, locs_mf, locs_hf]
+    return locs_all
 
 
 def test_maxmin_naive(locations_2d):
@@ -55,6 +65,35 @@ def test_cond_set_naive(locations_2d):
             [0, 1],
             [0, 1],
             [2, 0],
+        ]
+    )
+
+    assert np.all(correct_result == cond_set)
+
+
+def test_cond_set_mf(locations_2d_mf):
+    correct_order_lf = np.array([0, 1])
+    correct_order_mf = np.array([2, 1, 0])
+    correct_order_hf = np.array([0, 4, 3, 2, 1])
+    locs_all = [
+        locations_2d_mf[0][correct_order_lf, :],
+        locations_2d_mf[1][correct_order_mf, :],
+        locations_2d_mf[2][correct_order_hf, :],
+    ]
+    cond_set = find_nns_l2_mf(locs_all, max_nn=2)
+
+    correct_result = np.array(
+        [
+            [-1, -1, -1, -1],
+            [0, -1, -1, -1],
+            [-1, -1, 0, 1],
+            [2, -1, 1, 0],
+            [2, 3, 0, 1],
+            [-1, -1, 2, 4],
+            [5, -1, 3, 2],
+            [5, 6, 4, 2],
+            [5, 6, 2, 3],
+            [7, 5, 2, 4],
         ]
     )
 
