@@ -22,12 +22,12 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Intended Audience :: Science/Research",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10, <3.13"
 dependencies = [
     "numpy >= 1.24.2",
     "scipy >= 1.10.1",
     "scikit-learn >= 1.2.2",
-    "faiss-cpu >= 1.7.3",
+    "faiss-cpu >= 1.7.3, < 1.9.0",
 ]
 dynamic = ["version"]
 
@@ -67,4 +67,10 @@ scripts_are_modules = true
 filterwarnings = [
     "error",
     "ignore:distutils Version classes are deprecated:DeprecationWarning",
+    "ignore:numpy.core._multiarray_umath is deprecated and has been renamed to numpy._core._multiarray_umath"
 ]
+
+[tool.pyright]
+exclude = [ "venv" ]
+venvPath = "."
+venv = "venv"
