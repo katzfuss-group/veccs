@@ -25,6 +25,19 @@ that a c++ compiler and the python headers are installed.
 
 `pip install -e .`
 
+### Legacy dependencies
+
+Previous versions of this package used `faiss-cpu` and `sklearn`. These
+functions are still available, but are not installed by default. To install
+them, run `pip install -e .[legacy]`.
+
+Please note that that these functions are deprecated and maybe removed in the
+future. It has been observed that the legacy code caused issues on some Mac
+Systems when using specific versions of, e.g., `faiss-cpu >= 1.8` and soemtimes
+in combination with `pytorch`.
+
+
+
 ## How to contribute
 
 1. install the package with the additional dependencies for development using

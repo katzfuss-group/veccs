@@ -14,8 +14,8 @@ license = {text = "MIT License"}
 authors = [
     {name = "Matthias Katzfuss", email = "katzfuss@gmail.com"},
     {name = "Myeongjong Kang", email = "kmj.stat@gmail.com"},
-    {name = "Jian Cao", email = "jian.cao@tamu.edu"},
-    {name = "Paul Wiemann", email = "wiemann@tamu.edu"},
+    {name = "Jian Cao", email = "jcao21@uh.edu"},
+    {name = "Paul Wiemann", email = "wiemann.3@osu.edu"},
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -26,8 +26,7 @@ requires-python = ">=3.10, <3.13"
 dependencies = [
     "numpy >= 1.24.2",
     "scipy >= 1.10.1",
-    "scikit-learn >= 1.2.2",
-    "faiss-cpu >= 1.7.3, < 1.9.0",
+    "deprecated > 1.2",
 ]
 dynamic = ["version"]
 
@@ -35,6 +34,13 @@ dynamic = ["version"]
 version = {attr = "veccs.__version__.__version__"}
 
 [project.optional-dependencies]
+
+legacy = [
+    "faiss-cpu >= 1.7.3",
+    "numpy<2.0",
+    "scikit-learn >= 1.2.2",
+]
+
 dev = [
     "black",
     "flake8",
@@ -67,7 +73,7 @@ scripts_are_modules = true
 filterwarnings = [
     "error",
     "ignore:distutils Version classes are deprecated:DeprecationWarning",
-    "ignore:numpy.core._multiarray_umath is deprecated and has been renamed to numpy._core._multiarray_umath"
+    "ignore:numpy.core._multiarray_umath is deprecated and has been renamed to numpy._core._multiarray_umath",
 ]
 
 [tool.pyright]
