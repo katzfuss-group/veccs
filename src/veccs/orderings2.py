@@ -52,29 +52,29 @@ def maximin_ordering(points: np.ndarray, start_index: int) -> np.ndarray:
 
     # Main loop
     while len(order) < n_pts:
-        # 1) Extract the farthest‑first candidate
+        # Extract the farthest‑first candidate
         neg_d, idx = heappop(heap)
         # skip if selected or stale
         if selected[idx] or -neg_d != min_dist[idx]:
             continue
 
-        # 2) Select it
+        # Select it
         selected[idx] = True
         order.append(idx)
         radius = min_dist[idx]  # this was the max of min_dist
 
-        # 3) Radius query: only points whose current min_dist could shrink
+        # Radius query - only points whose current min_dist could shrink
         neighbors = tree.query_ball_point(points[idx], r=radius)
         # filter out already-selected ones
         to_check = [j for j in neighbors if not selected[j]]
         if not to_check:
             continue
 
-        # 4) Compute true distances for those neighbors
+        # Compute true distances for those neighbors
         subset = points[to_check] - points[idx]  # (k, D)
         dists = np.linalg.norm(subset, axis=1)
 
-        # 5) Wherever dists < min_dist, update and push to heap
+        # Wherever dists < min_dist, update and push to heap
         for j, dj in zip(to_check, dists):
             if dj < min_dist[j]:
                 min_dist[j] = dj
