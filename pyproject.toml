@@ -45,8 +45,7 @@ docs = [
 ]
 
 legacy = [
-    "faiss-cpu >= 1.7.3",
-    "numpy<2.0",
+    "faiss-cpu >= 1.11.0",
     "scikit-learn >= 1.2.2",
 ]
 
