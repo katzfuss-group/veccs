@@ -20,10 +20,14 @@ These include
 
 ## Installation
 
-Run the following command in your local virtual environment. Please make sure
-that a c++ compiler and the python headers are installed.
+The project is managed using [uv](https://docs.astral.sh/uv/). To install the
+package, first install `uv`. Then, clone the repository and run the following
+command
 
-`pip install -e .`
+`pip uv sync`
+
+in the root directory of the project. If you want to use the locked version of
+the dependencies, run `pip uv sync --locked`.
 
 ### Legacy dependencies
 
@@ -41,10 +45,12 @@ in combination with `pytorch`.
 ## How to contribute
 
 1. install the package with the additional dependencies for development using
-   `pip install -e .[dev,docs]`
+   `pip uv sync --dev --group docs`
 2. before pushing on `main` or a PR, run `pre-commit run --all-files` and
    `pytest`.
 3. before pushing on `main` or merging a PR, make sure the code is well
-   documented.
+   documented. The documentenation can be viewed while editing the code using
+   `mkdocs serve`.
 
-The documentenation can be viewed while editing the code using `mkdocs serve`.
+To run the commands, without activating the virtual environment, prepend `uv
+run `, e.g., `uv run mkdocs serve`.
