@@ -53,7 +53,6 @@ legacy = [
 [tool.mypy]
 files = ["src", "tests"]
 ignore_missing_imports = true
-scripts_are_modules = true
 
 # turn warnings into errors
 [tool.pytest.ini_options]

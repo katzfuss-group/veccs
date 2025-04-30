@@ -1,6 +1,6 @@
 import itertools as it
 import timeit
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 
