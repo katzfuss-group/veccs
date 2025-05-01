@@ -3,7 +3,7 @@ import pytest
 
 from veccs.orderings2 import (
     farthest_first_ordering,
-    find_preceding_neighbors,
+    preceding_neighbors,
     reorder_farthest_first_with_neighbors,
 )
 
@@ -49,7 +49,7 @@ def test_farthest_first_ordering_with_groups(locations_2d):
 def test_find_prev_nearest_neighbors_chunked(locations_2d):
     correct_order = np.array([0, 4, 3, 2, 1])
     locs_ord = locations_2d[correct_order, :]
-    cond_set, dists = find_preceding_neighbors(
+    cond_set, dists = preceding_neighbors(
         locs_ord,
         np.arange(correct_order.shape[0]),
         num_neighbors=2,
@@ -97,6 +97,6 @@ def test_reorder_farthest_first_with_neighbors(locations_2d):
     assert np.allclose(res.separation_distances, dists)
     assert np.allclose(res.coordinates, locations_2d)
 
-    nei, ndists = find_preceding_neighbors(locations_2d, np.arange(len(ord)), 2)
+    nei, ndists = preceding_neighbors(locations_2d, np.arange(len(ord)), 2)
     assert np.allclose(res.neighbor_indices, nei)
     assert np.allclose(res.neighbor_distances, ndists)

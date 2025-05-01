@@ -4,6 +4,7 @@ from typing import NamedTuple
 
 import numpy as np
 import scipy.spatial
+from deprecated import deprecated
 
 
 def middle_of_bounding_box(points: np.ndarray) -> np.ndarray:
@@ -181,7 +182,7 @@ def farthest_first_ordering(
     return ordering, distances
 
 
-def find_preceding_neighbors(
+def preceding_neighbors(
     coordinates: np.ndarray,
     sequence: np.ndarray,
     num_neighbors: int,
@@ -389,7 +390,7 @@ def reorder_farthest_first_with_neighbors(
     sequence = np.arange(len(ordering))
 
     # Find nearest neighbors in the reordered space
-    neighbor_indices, neighbor_distances = find_preceding_neighbors(
+    neighbor_indices, neighbor_distances = preceding_neighbors(
         reordered_coordinates,
         sequence,
         num_neighbors=num_neighbors,
@@ -404,3 +405,28 @@ def reorder_farthest_first_with_neighbors(
         neighbor_distances=neighbor_distances,
         inverse_permutation=np.argsort(ordering),
     )
+
+
+@deprecated
+def maximin_ordering(points: np.ndarray, start_index: int) -> np.ndarray:
+    ord, _ = farthest_first_ordering(
+        points,
+        start_index=start_index,
+    )
+    return ord
+
+
+@deprecated
+def find_prev_nearest_neighbors(
+    points: np.ndarray,
+    ordering: np.ndarray,
+    max_nn: int,
+    chunk_size: int = 1000,
+) -> np.ndarray:
+    ind, _ = preceding_neighbors(
+        points,
+        ordering,
+        num_neighbors=max_nn,
+        rebuild_frequency=chunk_size,
+    )
+    return ind
