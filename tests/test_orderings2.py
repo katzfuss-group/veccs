@@ -2,8 +2,9 @@ import numpy as np
 import pytest
 
 from veccs.orderings2 import (
-    find_prev_nearest_neighbors,
-    maximin_ordering,
+    farthest_first_ordering,
+    find_preceding_neighbors,
+    reorder_farthest_first_with_neighbors,
 )
 
 
@@ -21,8 +22,8 @@ def locations_2d_mf():
     return locs_all
 
 
-def test_maxmin_kdtree_heap(locations_2d):
-    ord, min_dists = maximin_ordering(locations_2d, 0)
+def test_farthest_first_ordering(locations_2d):
+    ord, min_dists = farthest_first_ordering(locations_2d, 0)
 
     correct_order = np.array([0, 4, 3, 2, 1])
     assert np.all(correct_order == ord)
@@ -32,8 +33,10 @@ def test_maxmin_kdtree_heap(locations_2d):
     assert np.allclose(correct_dists, min_dists[ord])
 
 
-def test_maxmin_kdtree_heap_with_groups(locations_2d):
-    ord, min_dists = maximin_ordering(locations_2d, 0, groups=[[0, 1], [2, 3, 4]])
+def test_farthest_first_ordering_with_groups(locations_2d):
+    ord, min_dists = farthest_first_ordering(
+        locations_2d, 0, partition=[[0, 1], [2, 3, 4]]
+    )
 
     correct_order = np.array([0, 1, 4, 2, 3])
     assert np.all(correct_order == ord)
@@ -46,8 +49,11 @@ def test_maxmin_kdtree_heap_with_groups(locations_2d):
 def test_find_prev_nearest_neighbors_chunked(locations_2d):
     correct_order = np.array([0, 4, 3, 2, 1])
     locs_ord = locations_2d[correct_order, :]
-    cond_set, dists = find_prev_nearest_neighbors(
-        locs_ord, np.arange(correct_order.shape[0]), max_nn=2, chunk_size=2
+    cond_set, dists = find_preceding_neighbors(
+        locs_ord,
+        np.arange(correct_order.shape[0]),
+        num_neighbors=2,
+        rebuild_frequency=2,
     )
 
     correct_result = np.array(
@@ -76,3 +82,21 @@ def test_find_prev_nearest_neighbors_chunked(locations_2d):
         ]
     )
     assert np.allclose(correct_dists, dists)
+
+
+def test_reorder_farthest_first_with_neighbors(locations_2d):
+    res = reorder_farthest_first_with_neighbors(locations_2d, num_neighbors=2)
+    correct_order = np.array([0, 4, 3, 2, 1])
+    perm = np.argsort(correct_order)
+
+    assert np.all(perm == res.inverse_permutation)
+
+    ord, dists = farthest_first_ordering(locations_2d)
+    locations_2d = locations_2d[ord]
+    dists = dists[ord]
+    assert np.allclose(res.separation_distances, dists)
+    assert np.allclose(res.coordinates, locations_2d)
+
+    nei, ndists = find_preceding_neighbors(locations_2d, np.arange(len(ord)), 2)
+    assert np.allclose(res.neighbor_indices, nei)
+    assert np.allclose(res.neighbor_distances, ndists)

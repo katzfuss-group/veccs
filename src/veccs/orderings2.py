@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from heapq import heapify, heappop, heappush
+from typing import NamedTuple
 
 import numpy as np
 import scipy.spatial
@@ -43,64 +44,63 @@ def middle_of_convex_hull(points: np.ndarray) -> np.ndarray:
     return np.mean(hull_points, axis=0)
 
 
-def maximin_ordering(
-    points: np.ndarray,
+def farthest_first_ordering(
+    coordinates: np.ndarray,
     start_index: int | None = None,
-    closest_to: np.ndarray | None = None,
-    groups: Sequence[Sequence[int]] | None = None,
+    reference_point: np.ndarray | None = None,
+    partition: Sequence[Sequence[int]] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Compute a max-min (farthest-first) ordering of a set of points in R^D.
+    Compute a farthest-first (maximin) ordering of points in space.
 
-    This is a greedy algorithm that picks the first point, then
-    repeatedly picks the point that is farthest from the set of
-    previously-selected points.
+    This greedy algorithm selects points sequentially, each time choosing the point
+    that maximizes the minimum distance to all previously selected points.
 
-    Implementation is based on KD-trees and a priority queue (heap).
-    If start_index and closest_to are both None, the first point is chosen closest to
-    the centroid of the bounding box. If closest_to is not None and start_index is not
-    None, a ValueError is raised.
+    Implementation uses KD-trees and a priority queue (heap) for efficiency.
 
-
+    Parameters
     ----------
-    points : np.ndarray, shape (n_points, D)
-        The input point set.
-    start_index
-        The index of the first point to pick.
+    coordinates : np.ndarray, shape (n, D)
+        The point coordinates in D-dimensional space.
 
-    closest_to : np.ndarray, shape (D,) | None
-        If not None, the closest point in the set will be the first point in the
-        returned ordering.
+    start_index : int | None, default=None
+        The index of the first point in the ordering. If None and reference_point
+        is also None, the point closest to the middle of the bounding box is
+        selected.
 
-    groups : Sequence[Sequence[int]] | None
-        If not None, the ordering will be done within each group, while taking the
-        points from earlier groups into account. Each group is a sequence of indices
-        into `points`. The ordering will be done separately for each group, and the
-        results will be concatenated.
+    reference_point : np.ndarray, shape (D,) | None, default=None
+        If provided, the first point will be the one closest to this coordinate.
+        Cannot be specified together with start_index.
+
+    partition : Sequence[Sequence[int]] | None, default=None
+        Optional grouping of point indices. If provided, ordering is performed
+        within each group while considering points from earlier groups. Each group
+        is a sequence of indices into `coordinates`.
 
 
     Returns
     -------
-    order : np.ndarray, shape (n_points,)
-        A permutation of 0..n_points-1 giving the max-min ordering.
+    ordering : np.ndarray, shape (n,)
+        A permutation of point indices (0...n-1) giving the maximin ordering.
 
-    min_dists : np.ndarray, shape (n_points,)
-        The distance from each point to the closest previously ordered point.
+    distances : np.ndarray, shape (n,)
+        For each point, its distance to the closest previously ordered point.
+        The first point has distance 0.
     """
-    n_pts = points.shape[0]
+    n_pts = coordinates.shape[0]
 
-    if closest_to is not None and start_index is not None:
+    if reference_point is not None and start_index is not None:
         raise ValueError("Cannot specify both start_index and closest_to.")
 
-    if closest_to is None and start_index is None:
-        closest_to = middle_of_bounding_box(points)
+    if reference_point is None and start_index is None:
+        reference_point = middle_of_bounding_box(coordinates)
 
-    if groups is None:
-        groups = [list(range(n_pts))]
+    if partition is None:
+        partition = [list(range(n_pts))]
     else:
         # check that the indices in groups are valid and unique
         all_indices: set[int] = set()
-        for group in groups:
+        for group in partition:
             all_indices.update(group)
         if len(all_indices) != n_pts:
             raise ValueError(
@@ -109,18 +109,18 @@ def maximin_ordering(
 
     # Build a reverse lookup: point -> group ID
     group_of = np.empty(n_pts, dtype=int)
-    for gi, grp in enumerate(groups):
+    for gi, grp in enumerate(partition):
         group_of[grp] = gi
 
     # Build a KD‑tree on all points (static)
-    tree = scipy.spatial.KDTree(points)
+    tree = scipy.spatial.KDTree(coordinates)
 
-    if closest_to is not None:
-        if closest_to.shape != points.shape[1:]:
+    if reference_point is not None:
+        if reference_point.shape != coordinates.shape[1:]:
             raise ValueError(
                 "closest_to must have the same shape as a point in points."
             )
-        start_index = tree.query(closest_to, k=1)[1]
+        start_index = tree.query(reference_point, k=1)[1]
 
     # tell mypy that start_index is now definitely an int
     assert start_index is not None, "start_index must be set"
@@ -137,7 +137,7 @@ def maximin_ordering(
 
     # For each point i, min_dist[i] = distance to the closest selected point so far.
     # Initialize with distances to the start point.
-    diffs = points - points[start_index]  # (n_pts, D)
+    diffs = coordinates - coordinates[start_index]  # (n_pts, D)
     min_dist = np.linalg.norm(diffs, axis=1)
     min_dist[start_index] = 0.0  # so it never gets picked again
 
@@ -159,14 +159,14 @@ def maximin_ordering(
         radius = min_dist[idx]  # this was the max of min_dist
 
         # Radius query - only points whose current min_dist could shrink
-        neighbors = tree.query_ball_point(points[idx], r=radius)
+        neighbors = tree.query_ball_point(coordinates[idx], r=radius)
         # filter out already-selected ones
         to_check = [j for j in neighbors if not selected[j]]
         if not to_check:
             continue
 
         # Compute true distances for those neighbors
-        subset = points[to_check] - points[idx]  # (k, D)
+        subset = coordinates[to_check] - coordinates[idx]  # (k, D)
         dists = np.linalg.norm(subset, axis=1)
 
         # Wherever dists < min_dist, update and push to heap
@@ -175,21 +175,24 @@ def maximin_ordering(
                 min_dist[j] = dj
                 heappush(heap, (group_of[j], -dj, j))
 
-    order_array = np.array(order, dtype=int)
-    min_dists_array = np.array(min_dist, dtype=float)
+    ordering = np.array(order, dtype=int)
+    distances = np.array(min_dist, dtype=float)
 
-    return order_array, min_dists_array
+    return ordering, distances
 
 
-def find_prev_nearest_neighbors(
-    points: np.ndarray,
-    ordering: np.ndarray,
-    max_nn: int,
-    chunk_size: int = 1000,
+def find_preceding_neighbors(
+    coordinates: np.ndarray,
+    sequence: np.ndarray,
+    num_neighbors: int,
+    rebuild_frequency: int = 1000,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    For each point, find its max_nn nearest neighbors among those
-    appearing earlier in the given 'ordering'.
+    Find nearest neighbors that precede each point in a given sequence.
+
+    For each point, identifies the nearest neighbors among those that appear
+    earlier in the specified sequence. Uses a KD-tree with periodic rebuilding
+    for efficiency.
 
     Distances are calculated using a KD-tree, which is rebuilt every
     chunk_size points and a brute-force search is used for the rest
@@ -197,51 +200,48 @@ def find_prev_nearest_neighbors(
 
     Parameters
     ----------
-    points   : np.ndarray, shape (n, D)
-               Your data points.
-    ordering : np.ndarray, shape (n,)
-               A permutation of [0..n-1] (e.g. maximin order).
-    max_nn   : int
-               Number of neighbors to return for each point.
-    chunk_size : int
-               The KD-tree is rebuild every chunk_size points.
+    data_points : np.ndarray, shape (n, D)
+        The point set in D-dimensional space.
+    sequence : np.ndarray, shape (n,)
+        A permutation of [0..n-1] defining processing order (e.g. maximin order).
+    num_neighbors : int
+        Maximum number of neighbors to find for each point.
+    rebuild_frequency : int, default=1000
+        How often to rebuild the KD-tree (in terms of points processed).
 
     Returns
     -------
-    neighbors: np.ndarray, shape (n, k)
-               neighbors[i] are the indices (into `points`) of the
-               k closest points to i that come before i in `ordering`.
-               If fewer than k exist (for the very first points),
-               entries are -1.
+    neighbor_indices : np.ndarray, shape (n, k)
+        neighbor_indices[i] contains indices of the k closest points to i
+        that come before i in the sequence. Unfilled entries are -1.
 
-    neighbor_dists: np.ndarray, shape (n, k)
-                neighbor_dists[i] are the distances to the k closest
-                points to i that come before i in `ordering`.
-                Entries in the corresponding to -1 neighbors are uninitialized.
-
+    distances : np.ndarray, shape (n, k)
+        distances[i] contains the corresponding distances to the neighbors.
+        Entries corresponding to -1 neighbors are uninitialized.
     """
-    npts = points.shape[0]
-    if ordering.shape[0] != npts:
+
+    npts = coordinates.shape[0]
+    if sequence.shape[0] != npts:
         raise ValueError("'ordering' must be length n")
-    if max_nn < 1 or chunk_size < 1:
+    if num_neighbors < 1 or rebuild_frequency < 1:
         raise ValueError("max_nn and chunk_size must both be at least 1")
 
     # Output array, default = -1
-    neighbors = -np.ones((npts, max_nn), dtype=int)
+    neighbors = -np.ones((npts, num_neighbors), dtype=int)
     neighbor_dists = np.empty_like(neighbors, dtype=float)
 
     tree = None
     prev_idx_tree = None
     base_idx = 0  # rank at which current tree was built
 
-    for r, idx in enumerate(ordering):
+    for r, idx in enumerate(sequence):
         if r == 0:
             continue  # no previous points
 
         # Rebuild the tree every B points
-        if r % chunk_size == 0:
-            prev_idx_tree = ordering[:r]
-            prev_pts_tree = points[prev_idx_tree]
+        if r % rebuild_frequency == 0:
+            prev_idx_tree = sequence[:r]
+            prev_pts_tree = coordinates[prev_idx_tree]
             tree = scipy.spatial.KDTree(prev_pts_tree) if r > 0 else None
             base_idx = r
 
@@ -250,8 +250,8 @@ def find_prev_nearest_neighbors(
 
         # Query the static tree (all points up through base_idx)
         if tree is not None and prev_idx_tree is not None and base_idx > 0:
-            q = min(max_nn, base_idx)
-            d_tree, locs_tree = tree.query(points[idx], k=q)
+            q = min(num_neighbors, base_idx)
+            d_tree, locs_tree = tree.query(coordinates[idx], k=q)
             # unify shapes when q=1
             if q == 1:
                 d_tree = np.array([d_tree])
@@ -263,12 +263,12 @@ def find_prev_nearest_neighbors(
         # Brute‑force search on the new points since last rebuild
         new_size = r - base_idx
         if new_size > 0:
-            prev_idx_chunk = ordering[base_idx:r]
-            pts_chunk = points[prev_idx_chunk]
-            diffs = pts_chunk - points[idx]  # (new_size, D)
+            prev_idx_chunk = sequence[base_idx:r]
+            pts_chunk = coordinates[prev_idx_chunk]
+            diffs = pts_chunk - coordinates[idx]  # (new_size, D)
             d_chunk = np.linalg.norm(diffs, axis=1)  # (new_size,)
 
-            m = min(max_nn, new_size)
+            m = min(num_neighbors, new_size)
             if new_size <= m:
                 sel = np.argsort(d_chunk)
             else:
@@ -285,8 +285,122 @@ def find_prev_nearest_neighbors(
             # pair up and sort by distance
             merged = list(zip(cand_dists, cand_idxs))
             merged.sort(key=lambda x: x[0])
-            for j, (dist, neigh) in enumerate(merged[:max_nn]):
+            for j, (dist, neigh) in enumerate(merged[:num_neighbors]):
                 neighbors[idx, j] = neigh
                 neighbor_dists[idx, j] = dist
 
     return neighbors, neighbor_dists
+
+
+class FarthestFirstResult(NamedTuple):
+    """
+    Results from farthest-first (maximin) ordering with neighbor computation.
+
+    This contains the reordered points and their relationships in the
+    farthest-first sequence.
+
+    Attributes
+    ----------
+    reordered_points : np.ndarray, shape (n, D)
+        The input points reordered according to the farthest-first traversal.
+
+    separation_distances : np.ndarray, shape (n,)
+        For each point, its distance to the closest previously ordered point.
+        The first point has distance 0.
+
+    neighbor_indices : np.ndarray, shape (n, k)
+        For each point, the indices of its k nearest neighbors that appear earlier
+        in the ordering. Unfilled entries are -1.
+
+    neighbor_distances : np.ndarray, shape (n, k)
+        The corresponding distances to the k nearest neighbors.
+        Entries corresponding to -1 in neighbor_indices are uninitialized.
+
+    inverse_permutation : np.ndarray, shape (n,)
+        Maps from the new ordering back to the original indices.
+        Can be used to undo the permutation.
+    """
+
+    coordinates: np.ndarray
+    separation_distances: np.ndarray
+    neighbor_indices: np.ndarray
+    neighbor_distances: np.ndarray
+    inverse_permutation: np.ndarray
+
+
+def reorder_farthest_first_with_neighbors(
+    coordinates: np.ndarray,
+    num_neighbors: int,
+    start_index: int | None = None,
+    reference_point: np.ndarray | None = None,
+    rebuild_frequency: int = 1000,
+) -> FarthestFirstResult:
+    """
+    Compute farthest-first ordering and find nearest neighbors in one function.
+
+    This is a convenience function that combines `farthest_first_ordering` and
+    `find_preceding_neighbors` for simple use cases without partitions. It returns
+    the points reordered according to the maximin (farthest-first) traversal, along
+    with their preceding neighbors and distance information.
+
+    Parameters
+    ----------
+    coordinates : np.ndarray, shape (n, D)
+        The point coordinates in D-dimensional space.
+
+    num_neighbors : int
+        Maximum number of neighbors to find for each point.
+
+    start_index : int | None, default=None
+        The index of the first point in the ordering. If None and reference_point
+        is also None, the point closest to the middle of the bounding box is
+        selected.
+
+    reference_point : np.ndarray, shape (D,) | None, default=None
+        If provided, the first point will be the one closest to this coordinate.
+        Cannot be specified together with start_index.
+
+    rebuild_frequency : int, default=1000
+        How often to rebuild the KD-tree in the neighbors search.
+
+    Returns
+    -------
+    FarthestFirstResult
+        A named tuple with fields:
+        - coordinates: The coordinates reordered according to the farthest-first
+            traversal
+        - separation_distances: For each point, its distance to the closest previously
+            ordered point
+        - neighbor_indices: For each point, indices of its k nearest preceding
+            neighbors
+        - neighbor_distances: Corresponding distances to the k nearest neighbors
+        - inverse_permutation: Map from the new ordering back to original indices
+    """
+    # Compute the farthest-first ordering
+    ordering, distances = farthest_first_ordering(
+        coordinates, start_index=start_index, reference_point=reference_point
+    )
+
+    # Reorder the coordinates according to the ordering
+    reordered_coordinates = coordinates[ordering]
+    reordered_distances = distances[ordering]
+
+    # Create a sequence of indices for the reordered coordinates
+    sequence = np.arange(len(ordering))
+
+    # Find nearest neighbors in the reordered space
+    neighbor_indices, neighbor_distances = find_preceding_neighbors(
+        reordered_coordinates,
+        sequence,
+        num_neighbors=num_neighbors,
+        rebuild_frequency=rebuild_frequency,
+    )
+
+    # Return all outputs as a named tuple
+    return FarthestFirstResult(
+        coordinates=reordered_coordinates,
+        separation_distances=reordered_distances,
+        neighbor_indices=neighbor_indices,
+        neighbor_distances=neighbor_distances,
+        inverse_permutation=np.argsort(ordering),
+    )
