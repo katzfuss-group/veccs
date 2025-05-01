@@ -7,7 +7,7 @@ import scipy.spatial.distance
 from .legacy import find_nns_l2, find_nns_naive
 from .maxmin_ancestor_cpp import maxmin_ancestor_cpp as _maxmin_ancestor_cpp
 from .maxmin_cpp import maxmin_cpp as _maxmin_cpp
-from .orderings2 import find_prev_nearest_neighbors
+from .orderings2 import find_preceding_neighbors
 
 __all__ = [
     "maxmin_cpp",
@@ -285,7 +285,7 @@ def find_nns_l2_mf(locs_all: list[np.ndarray], max_nn: int = 10) -> np.ndarray:
     NN_preb_list = []
     for r, locs in enumerate(locs_all):
         ns[r] = locs.shape[0]
-        NNr = find_prev_nearest_neighbors(locs, np.arange(locs.shape[0]), max_nn)
+        NNr, _ = find_preceding_neighbors(locs, np.arange(locs.shape[0]), max_nn)
         if r == 0:
             NN_preb = -np.ones((ns[r], max_nn), dtype=int)  # no nearest neighbors on
             # previous fidelity level for first fidelity level, use -1 for mask
@@ -293,7 +293,7 @@ def find_nns_l2_mf(locs_all: list[np.ndarray], max_nn: int = 10) -> np.ndarray:
             NNr = NNr + sum(ns[0:r])  # sum ns[0:r] because we need to
             # start counting all fidelities til this one
             # revert ruining which are -1
-            NNr[NNr == sum(ns[0:r]) - 1] = -1  # type: ignore
+            NNr[NNr == sum(ns[0:r]) - 1] = -1
             # in previous line, kinda dumb hack but I guess it works
             distM = scipy.spatial.distance.cdist(locs_all[r], locs_all[r - 1])
             odrM = np.argsort(distM)
