@@ -23,12 +23,23 @@ def locations_2d_mf():
 
 def test_maxmin_kdtree_heap(locations_2d):
     ord, min_dists = maximin_ordering(locations_2d, 0)
-    
+
     correct_order = np.array([0, 4, 3, 2, 1])
     assert np.all(correct_order == ord)
-    
+
     # correct min distances to prev points of the ordered points
-    correct_dists = np.array([0.0, 2.3, 1.9, 1.1, .9])
+    correct_dists = np.array([0.0, 2.3, 1.9, 1.1, 0.9])
+    assert np.allclose(correct_dists, min_dists[ord])
+
+
+def test_maxmin_kdtree_heap_with_groups(locations_2d):
+    ord, min_dists = maximin_ordering(locations_2d, 0, groups=[[0, 1], [2, 3, 4]])
+
+    correct_order = np.array([0, 1, 4, 2, 3])
+    assert np.all(correct_order == ord)
+
+    # correct min distances to prev points of the ordered points
+    correct_dists = np.array([0.0, 1.0, 2.3, 1.1, 0.9])
     assert np.allclose(correct_dists, min_dists[ord])
 
 
@@ -54,12 +65,14 @@ def test_find_prev_nearest_neighbors_chunked(locations_2d):
     # set uninitialized distances to -1
     print(dists)
     dists[cond_set == -1] = -1.0
-    
-    correct_dists = np.array([
+
+    correct_dists = np.array(
+        [
             [-1.0, -1.0],
             [2.3, -1.0],
             [1.9, 4.2],
             [1.1, 1.2],
             [0.9, 1.0],
-    ])
+        ]
+    )
     assert np.allclose(correct_dists, dists)

@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from heapq import heapify, heappop, heappush
 
 import numpy as np
@@ -42,7 +43,12 @@ def middle_of_convex_hull(points: np.ndarray) -> np.ndarray:
     return np.mean(hull_points, axis=0)
 
 
-def maximin_ordering(points: np.ndarray, start_index: int | None = None, closest_to: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+def maximin_ordering(
+    points: np.ndarray,
+    start_index: int | None = None,
+    closest_to: np.ndarray | None = None,
+    groups: Sequence[Sequence[int]] | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute a max-min (farthest-first) ordering of a set of points in R^D.
 
@@ -51,9 +57,9 @@ def maximin_ordering(points: np.ndarray, start_index: int | None = None, closest
     previously-selected points.
 
     Implementation is based on KD-trees and a priority queue (heap).
-    If start_index and closest_to are both None, the first point is chosen closest to the
-    centroid of the bounding box. If closest_to is not None and start_index is not None,
-    a ValueError is raised.
+    If start_index and closest_to are both None, the first point is chosen closest to
+    the centroid of the bounding box. If closest_to is not None and start_index is not
+    None, a ValueError is raised.
 
 
     ----------
@@ -61,9 +67,16 @@ def maximin_ordering(points: np.ndarray, start_index: int | None = None, closest
         The input point set.
     start_index
         The index of the first point to pick.
-    
+
     closest_to : np.ndarray, shape (D,) | None
-        If not None, the closest point in the set will be the first point in the returned ordering.
+        If not None, the closest point in the set will be the first point in the
+        returned ordering.
+
+    groups : Sequence[Sequence[int]] | None
+        If not None, the ordering will be done within each group, while taking the
+        points from earlier groups into account. Each group is a sequence of indices
+        into `points`. The ordering will be done separately for each group, and the
+        results will be concatenated.
 
 
     Returns
@@ -78,21 +91,42 @@ def maximin_ordering(points: np.ndarray, start_index: int | None = None, closest
 
     if closest_to is not None and start_index is not None:
         raise ValueError("Cannot specify both start_index and closest_to.")
-    
+
     if closest_to is None and start_index is None:
         closest_to = middle_of_bounding_box(points)
-    
+
+    if groups is None:
+        groups = [list(range(n_pts))]
+    else:
+        # check that the indices in groups are valid and unique
+        all_indices: set[int] = set()
+        for group in groups:
+            all_indices.update(group)
+        if len(all_indices) != n_pts:
+            raise ValueError(
+                "All indices in groups must be unique and cover all points."
+            )
+
+    # Build a reverse lookup: point -> group ID
+    group_of = np.empty(n_pts, dtype=int)
+    for gi, grp in enumerate(groups):
+        group_of[grp] = gi
+
     # Build a KD‑tree on all points (static)
     tree = scipy.spatial.KDTree(points)
 
     if closest_to is not None:
         if closest_to.shape != points.shape[1:]:
-            raise ValueError("closest_to must have the same shape as a point in points.")
+            raise ValueError(
+                "closest_to must have the same shape as a point in points."
+            )
         start_index = tree.query(closest_to, k=1)[1]
+
+    # tell mypy that start_index is now definitely an int
+    assert start_index is not None, "start_index must be set"
 
     if not (0 <= start_index < n_pts):
         raise ValueError("start_index must be in [0, n_points)")
-
 
     # Track which points are selected
     selected = np.zeros(n_pts, dtype=bool)
@@ -108,13 +142,13 @@ def maximin_ordering(points: np.ndarray, start_index: int | None = None, closest
     min_dist[start_index] = 0.0  # so it never gets picked again
 
     # Build a max‑heap of (min_dist, index) via pushing (-min_dist, idx)
-    heap = [(-d, i) for i, d in enumerate(min_dist)]
+    heap = [(group_of[i], -d, i) for i, d in enumerate(min_dist)]
     heapify(heap)
 
     # Main loop
     while len(order) < n_pts:
         # Extract the farthest‑first candidate
-        neg_d, idx = heappop(heap)
+        grp, neg_d, idx = heappop(heap)
         # skip if selected or stale
         if selected[idx] or -neg_d != min_dist[idx]:
             continue
@@ -139,12 +173,12 @@ def maximin_ordering(points: np.ndarray, start_index: int | None = None, closest
         for j, dj in zip(to_check, dists):
             if dj < min_dist[j]:
                 min_dist[j] = dj
-                heappush(heap, (-dj, j))
-                
-    order = np.array(order, dtype=int)
-    min_dists = np.array(min_dist, dtype=float)
+                heappush(heap, (group_of[j], -dj, j))
 
-    return order, min_dists
+    order_array = np.array(order, dtype=int)
+    min_dists_array = np.array(min_dist, dtype=float)
+
+    return order_array, min_dists_array
 
 
 def find_prev_nearest_neighbors(
