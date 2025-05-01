@@ -3,7 +3,6 @@ import pytest
 
 from veccs.orderings2 import (
     find_prev_nearest_neighbors,
-    find_prev_nearest_neighbors_not_chunked,
     maximin_ordering,
 )
 
@@ -23,35 +22,20 @@ def locations_2d_mf():
 
 
 def test_maxmin_kdtree_heap(locations_2d):
-    ord = maximin_ordering(locations_2d, 0)
+    ord, min_dists = maximin_ordering(locations_2d, 0)
+    
     correct_order = np.array([0, 4, 3, 2, 1])
     assert np.all(correct_order == ord)
-
-
-def test_find_prev_nearest_neighbors(locations_2d):
-    correct_order = np.array([0, 4, 3, 2, 1])
-    locs_ord = locations_2d[correct_order, :]
-    cond_set = find_prev_nearest_neighbors_not_chunked(
-        locs_ord, np.arange(correct_order.shape[0]), max_nn=2
-    )
-
-    correct_result = np.array(
-        [
-            [-1, -1],
-            [0, -1],
-            [0, 1],
-            [0, 1],
-            [2, 0],
-        ]
-    )
-
-    assert np.all(correct_result == cond_set)
+    
+    # correct min distances to prev points of the ordered points
+    correct_dists = np.array([0.0, 2.3, 1.9, 1.1, .9])
+    assert np.allclose(correct_dists, min_dists[ord])
 
 
 def test_find_prev_nearest_neighbors_chunked(locations_2d):
     correct_order = np.array([0, 4, 3, 2, 1])
     locs_ord = locations_2d[correct_order, :]
-    cond_set = find_prev_nearest_neighbors(
+    cond_set, dists = find_prev_nearest_neighbors(
         locs_ord, np.arange(correct_order.shape[0]), max_nn=2, chunk_size=2
     )
 
@@ -66,3 +50,16 @@ def test_find_prev_nearest_neighbors_chunked(locations_2d):
     )
 
     assert np.all(correct_result == cond_set)
+
+    # set uninitialized distances to -1
+    print(dists)
+    dists[cond_set == -1] = -1.0
+    
+    correct_dists = np.array([
+            [-1.0, -1.0],
+            [2.3, -1.0],
+            [1.9, 4.2],
+            [1.1, 1.2],
+            [0.9, 1.0],
+    ])
+    assert np.allclose(correct_dists, dists)
