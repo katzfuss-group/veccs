@@ -292,7 +292,8 @@ def find_nns_l2_mf(locs_all: list[np.ndarray], max_nn: int = 10) -> np.ndarray:
         else:
             NNr = NNr + sum(ns[0:r])  # sum ns[0:r] because we need to
             # start counting all fidelities til this one
-            NNr[NNr == sum(ns[0:r]) - 1] = -1  # revert ruining which are -1
+            # revert ruining which are -1
+            NNr[NNr == sum(ns[0:r]) - 1] = -1  # type: ignore
             # in previous line, kinda dumb hack but I guess it works
             distM = scipy.spatial.distance.cdist(locs_all[r], locs_all[r - 1])
             odrM = np.argsort(distM)
