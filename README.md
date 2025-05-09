@@ -33,13 +33,13 @@ In any case, this package comes with no warranty or guarantees.
 If you want to depend on this package in your own code, you can install it
 using
 ```
-pip install pip install https://github.com/katzfuss-group/veccs.git
+pip install git+https://github.com/katzfuss-group/veccs.git
 ```
 or
 similar using other managers. Please consider the disclaimer above and
 consider to depend on a specific version or commit, e.g.,
 ```
-pip install pip install https://github.com/katzfuss-group/veccs.git@v0.0.2
+pip install git+https://github.com/katzfuss-group/veccs.git@v0.0.2
 ```
 refers to the commit with the tag `v0.0.2`.
 
