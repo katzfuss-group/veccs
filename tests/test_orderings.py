@@ -5,9 +5,7 @@ import pytest
 import scipy.spatial.distance
 
 from veccs.orderings import (
-    find_nns_l2,
     find_nns_l2_mf,
-    find_nns_naive,
     maxmin_cpp,
     maxmin_cpp_ancestor,
     maxmin_naive,
@@ -53,24 +51,6 @@ def test_maxmin():
     assert np.all(ord0 == ord1)
 
 
-def test_cond_set_naive(locations_2d):
-    correct_order = np.array([0, 4, 3, 2, 1])
-    locs_ord = locations_2d[correct_order, :]
-    cond_set = find_nns_naive(locs_ord, max_nn=2)
-
-    correct_result = np.array(
-        [
-            [-1, -1],
-            [0, -1],
-            [0, 1],
-            [0, 1],
-            [2, 0],
-        ]
-    )
-
-    assert np.all(correct_result == cond_set)
-
-
 def test_cond_set_mf(locations_2d_mf):
     correct_order_lf = np.array([0, 1])
     correct_order_mf = np.array([2, 1, 0])
@@ -97,23 +77,6 @@ def test_cond_set_mf(locations_2d_mf):
         ]
     )
 
-    assert np.all(correct_result == cond_set)
-
-
-def test_cond_set_faiss(locations_2d):
-    correct_order = np.array([0, 4, 3, 2, 1])
-    locs_ord = locations_2d[correct_order, :]
-    cond_set = find_nns_l2(locs_ord, max_nn=2)
-
-    correct_result = np.array(
-        [
-            [-1, -1],
-            [0, -1],
-            [0, 1],
-            [0, 1],
-            [2, 0],
-        ]
-    )
     assert np.all(correct_result == cond_set)
 
 

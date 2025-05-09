@@ -39,25 +39,43 @@ or
 similar using other managers. Please consider the disclaimer above and
 consider to depend on a specific version or commit, e.g.,
 ```
-pip install pip install https://github.com/katzfuss-group/veccs.git@v0.0.1
+pip install pip install https://github.com/katzfuss-group/veccs.git@v0.0.2
 ```
-refers to the commit with the tag `v0.0.1`.
-
+refers to the commit with the tag `v0.0.2`.
 
 ## Installation
 
-Run the following command in your local virtual environment. Please make sure
-that a c++ compiler and the python headers are installed.
+The project is managed using [uv](https://docs.astral.sh/uv/). To install the
+package, first install `uv`. Then, clone the repository and run the following
+command
 
-`pip install -e .`
+`pip uv sync`
+
+in the root directory of the project. If you want to use the locked version of
+the dependencies, run `pip uv sync --locked`.
+
+### Legacy dependencies
+
+Previous versions of this package used `faiss-cpu` and `sklearn`. These
+functions are still available, but are not installed by default. To install
+them, run `pip install -e .[legacy]`.
+
+Please note that that these functions are deprecated and maybe removed in the
+future. It has been observed that the legacy code caused issues on some Mac
+Systems when using specific versions of, e.g., `faiss-cpu >= 1.8` and soemtimes
+in combination with `pytorch`.
+
+
 
 ## How to contribute
 
 1. install the package with the additional dependencies for development using
-   `pip install -e .[dev,docs]`
+   `pip uv sync --dev --group docs`
 2. before pushing on `main` or a PR, run `pre-commit run --all-files` and
    `pytest`.
 3. before pushing on `main` or merging a PR, make sure the code is well
-   documented.
+   documented. The documentenation can be viewed while editing the code using
+   `mkdocs serve`.
 
-The documentenation can be viewed while editing the code using `mkdocs serve`.
+To run the commands, without activating the virtual environment, prepend `uv
+run `, e.g., `uv run mkdocs serve`.

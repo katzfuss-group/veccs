@@ -1,44 +1,35 @@
-[build-system]
-requires = [
-    "setuptools>=65",
-    "wheel",
-    "pybind11>=2.6.1",
-]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "veccs"
+version = "0.0.2"
 description = "A Python package for efficiently computing conditioning sets for Vecchia approximations"
 readme = "README.md"
-license = {text = "MIT License"}
+
 authors = [
     {name = "Matthias Katzfuss", email = "katzfuss@gmail.com"},
     {name = "Myeongjong Kang", email = "kmj.stat@gmail.com"},
-    {name = "Jian Cao", email = "jian.cao@tamu.edu"},
-    {name = "Paul Wiemann", email = "wiemann@tamu.edu"},
+    {name = "Jian Cao", email = "jcao21@uh.edu"},
+    {name = "Paul Wiemann", email = "wiep@users.noreply.github.com"},
 ]
+license = "MIT"
+license-files = ["LICENSE"]
+
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Intended Audience :: Science/Research",
 ]
-requires-python = ">=3.10, <3.13"
+
+requires-python = ">=3.10"
+
 dependencies = [
     "numpy >= 1.24.2",
     "scipy >= 1.10.1",
-    "scikit-learn >= 1.2.2",
-    "faiss-cpu >= 1.7.3, < 1.9.0",
+    "deprecated > 1.2",
 ]
-dynamic = ["version"]
 
-[tool.setuptools.dynamic]
-version = {attr = "veccs.__version__.__version__"}
+[dependency-groups]
 
-[project.optional-dependencies]
 dev = [
-    "black",
-    "flake8",
-    "isort",
+    "ruff",
     "mypy>=0.991",
     "pre-commit",
     "pytest",
@@ -53,24 +44,47 @@ docs = [
     "mkdocs-literate-nav>=0.6.0",
 ]
 
-[tool.isort]
-profile = "black"
-py_version = 310
+legacy = [
+    "faiss-cpu >= 1.11.0",
+    "scikit-learn >= 1.2.2",
+]
 
 [tool.mypy]
 files = ["src", "tests"]
 ignore_missing_imports = true
-scripts_are_modules = true
 
 # turn warnings into errors
 [tool.pytest.ini_options]
 filterwarnings = [
     "error",
     "ignore:distutils Version classes are deprecated:DeprecationWarning",
-    "ignore:numpy.core._multiarray_umath is deprecated and has been renamed to numpy._core._multiarray_umath"
+    "ignore:numpy.core._multiarray_umath is deprecated and has been renamed to numpy._core._multiarray_umath",
 ]
 
-[tool.pyright]
-exclude = [ "venv" ]
-venvPath = "."
-venv = "venv"
+[tool.ruff.lint]
+extend-select = [
+    "F",    # pyflakes (flake8 core)
+    "E",    # pycodestyle errors (flake8)
+    "W",    # pycodestyle warnings (flake8)
+    "I",    # isort (import sorting)
+    "UP",   # pyupgrade (modern syntax)
+]
+
+extend-ignore = [
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[build-system]
+requires = [
+    "setuptools>=65", "wheel", "pybind11>=2.6.1",
+]
+build-backend = "setuptools.build_meta"
+
+# setuptools configuration:
+[tool.setuptools.packages.find]
+where = ["src"]
