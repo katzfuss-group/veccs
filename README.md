@@ -18,6 +18,32 @@ These include
 - maximin ordering
 - conditioning sets
 
+## Disclaimer
+
+This package is experimental and under active development. That means:
+
+- The API cannot be considered stable.
+- Testing has not been extensive as of now. Please check and verify!
+- There is currently not much documentation beyond this readme.
+
+In any case, this package comes with no warranty or guarantees.
+
+## Usage
+
+If you want to depend on this package in your own code, you can install it
+using
+```
+pip install pip install https://github.com/katzfuss-group/veccs.git
+```
+or
+similar using other managers. Please consider the disclaimer above and
+consider to depend on a specific version or commit, e.g.,
+```
+pip install pip install https://github.com/katzfuss-group/veccs.git@v0.0.1
+```
+refers to the commit with the tag `v0.0.1`.
+
+
 ## Installation
 
 Run the following command in your local virtual environment. Please make sure
