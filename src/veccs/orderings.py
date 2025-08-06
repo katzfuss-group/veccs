@@ -278,32 +278,43 @@ def find_nns_l2_mf(locs_all: list[np.ndarray], max_nn: int = 10) -> np.ndarray:
         neighbors. Indices go from 0 to N = n_1 + n_2 + ... + n_R.
         The array is then of size N by 2 max_nn
     """
+    ns = np.array([locs.shape[0] for locs in locs_all], dtype=int)
+    prefix_sum = np.concatenate(([0], np.cumsum(ns)))  # 0, n₁, n₁+n₂, …
 
-    R = len(locs_all)
-    ns = np.zeros(R, dtype=int)
-    NN_list = []
-    NN_preb_list = []
+    NN_same: list[np.ndarray] = []
+    NN_prev: list[np.ndarray] = []
+
     for r, locs in enumerate(locs_all):
-        ns[r] = locs.shape[0]
-        NNr, _ = preceding_neighbors(locs, np.arange(locs.shape[0]), max_nn)
-        if r == 0:
-            NN_preb = -np.ones((ns[r], max_nn), dtype=int)  # no nearest neighbors on
-            # previous fidelity level for first fidelity level, use -1 for mask
-        else:
-            NNr = NNr + sum(ns[0:r])  # sum ns[0:r] because we need to
-            # start counting all fidelities til this one
-            # revert ruining which are -1
-            NNr[NNr == sum(ns[0:r]) - 1] = -1
-            # in previous line, kinda dumb hack but I guess it works
-            distM = scipy.spatial.distance.cdist(locs_all[r], locs_all[r - 1])
-            odrM = np.argsort(distM)
-            NN_preb = odrM[:, :max_nn] + sum(ns[0 : r - 1])  # we need to start
-            # counting all fidelities til last one.
-        NN_list.append(NNr)
-        NN_preb_list.append(NN_preb)
+        n_r = ns[r]
 
-    NN = np.vstack(NN_list)
-    NN_preb = np.vstack(NN_preb_list)
-    NN_all = np.hstack((NN, NN_preb))
+        # within-fidelity neighbours
+        NNr, _ = preceding_neighbors(locs, np.arange(n_r), max_nn)
+        # shift to global indices, then restore the −1 mask
+        NNr = NNr + prefix_sum[r]
+        NNr[NNr == prefix_sum[r] - 1] = -1
+
+        # previous fidelity neighbours
+        if r == 0:  # no previous fidelity
+            NN_prev_r = -np.ones((n_r, max_nn), dtype=int)
+        else:
+            prev_n = ns[r - 1]
+            k = min(max_nn, prev_n)
+
+            # allocate full (n_r, max_nn) array filled with −1
+            NN_prev_r = -np.ones((n_r, max_nn), dtype=int)
+
+            distM = scipy.spatial.distance.cdist(
+                locs_all[r], locs_all[r - 1]
+            )  # (n_r, prev_n)
+            odr = np.argsort(distM, axis=1)[:, :k]  # (n_r, k)
+
+            NN_prev_r[:, :k] = odr + prefix_sum[r - 1]  # shift to global
+
+        NN_same.append(NNr)
+        NN_prev.append(NN_prev_r)
+
+    NN_same_ = np.vstack(NN_same)
+    NN_prev_ = np.vstack(NN_prev)
+    NN_all = np.hstack((NN_same_, NN_prev_))
 
     return NN_all
