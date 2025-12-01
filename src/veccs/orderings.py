@@ -279,7 +279,7 @@ def find_nns_l2_mf(locs_all: list[np.ndarray], max_nn: int = 10) -> np.ndarray:
         The array is then of size N by 2 max_nn
     """
     ns = np.array([locs.shape[0] for locs in locs_all], dtype=int)
-    prefix_sum = np.concatenate(([0], np.cumsum(ns)))  # 0, n₁, n₁+n₂, …
+    prefix_sum = np.concatenate(([0], np.cumsum(ns)))  # 0, n_1, n_1 + n_2, ...
 
     NN_same: list[np.ndarray] = []
     NN_prev: list[np.ndarray] = []
