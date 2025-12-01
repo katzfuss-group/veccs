@@ -121,13 +121,17 @@ def farthest_first_ordering(
             raise ValueError(
                 "closest_to must have the same shape as a point in points."
             )
-        start_index = tree.query(reference_point, k=1)[1]
+        tree_group_0 = scipy.spatial.KDTree(coordinates[partition[0]])
+        start_index_grp_0 = tree_group_0.query(reference_point, k=1)[1]
+        start_index = partition[0][start_index_grp_0]
 
     # tell mypy that start_index is now definitely an int
     assert start_index is not None, "start_index must be set"
 
-    if not (0 <= start_index < n_pts):
-        raise ValueError("start_index must be in [0, n_points)")
+    if start_index not in set(partition[0]):
+        raise ValueError(
+            "start_index must be in group 0; got " + f"start_index={start_index}"
+        )
 
     # Track which points are selected
     selected = np.zeros(n_pts, dtype=bool)

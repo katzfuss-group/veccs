@@ -46,6 +46,19 @@ def test_farthest_first_ordering_with_groups(locations_2d):
     assert np.allclose(correct_dists, min_dists[ord])
 
 
+def test_farthest_first_with_reference_point(locations_2d):
+    ord, _ = farthest_first_ordering(
+        locations_2d,
+        reference_point=np.array([1.1, 0.1]),
+        partition=[[1, 0], [2, 3, 4]],
+    )
+
+    # the reference point is closest to point 2 but point 2 is in group 1,
+    # so the first point in the ordering must be point 0 from group 0
+    correct_order = np.array([0, 1, 4, 2, 3])
+    assert np.all(correct_order == ord)
+
+
 def test_find_prev_nearest_neighbors_chunked(locations_2d):
     correct_order = np.array([0, 4, 3, 2, 1])
     locs_ord = locations_2d[correct_order, :]
