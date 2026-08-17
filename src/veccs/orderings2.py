@@ -50,6 +50,7 @@ def farthest_first_ordering(
     start_index: int | None = None,
     reference_point: np.ndarray | None = None,
     partition: Sequence[Sequence[int]] | None = None,
+    random_state: int | np.random.Generator | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute a farthest-first (maximin) ordering of points in space.
@@ -78,6 +79,11 @@ def farthest_first_ordering(
         within each group while considering points from earlier groups. Each group
         is a sequence of indices into `coordinates`.
 
+    random_state : int | np.random.Generator | None, default=None
+        Controls tie-breaking between points with the same minimum distance to
+        the previously selected points. If None, ties are broken by index, i.e.,
+        select point with smallest index.
+        If an int or Generator is given, ties are broken randomly.
 
     Returns
     -------
@@ -146,14 +152,22 @@ def farthest_first_ordering(
     min_dist = np.linalg.norm(diffs, axis=1)
     min_dist[start_index] = 0.0  # so it never gets picked again
 
+    # tiebreak[i] decides which point wins when several points tie for the max
+    # min_dist.
+    if random_state is None:
+        tiebreak = np.arange(n_pts)
+    else:
+        rng = np.random.default_rng(random_state)
+        tiebreak = rng.permutation(n_pts)
+
     # Build a max‑heap of (min_dist, index) via pushing (-min_dist, idx)
-    heap = [(group_of[i], -d, i) for i, d in enumerate(min_dist)]
+    heap = [(group_of[i], -d, tiebreak[i], i) for i, d in enumerate(min_dist)]
     heapify(heap)
 
     # Main loop
     while len(order) < n_pts:
         # Extract the farthest‑first candidate
-        grp, neg_d, idx = heappop(heap)
+        _, neg_d, _, idx = heappop(heap)
         # skip if selected or stale
         if selected[idx] or -neg_d != min_dist[idx]:
             continue
@@ -178,7 +192,7 @@ def farthest_first_ordering(
         for j, dj in zip(to_check, dists):
             if dj < min_dist[j]:
                 min_dist[j] = dj
-                heappush(heap, (group_of[j], -dj, j))
+                heappush(heap, (group_of[j], -dj, tiebreak[j], j))
 
     ordering = np.array(order, dtype=int)
     distances = np.array(min_dist, dtype=float)

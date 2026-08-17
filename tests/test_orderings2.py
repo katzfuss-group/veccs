@@ -46,6 +46,31 @@ def test_farthest_first_ordering_with_groups(locations_2d):
     assert np.allclose(correct_dists, min_dists[ord])
 
 
+def test_farthest_first_ordering_random_tiebreak():
+    # a regular grid has many exact distance ties;
+    # the default index-based tiebreak and a random one should produce different,
+    # but each internally valid, orderings
+    xs, ys = np.meshgrid(np.arange(5), np.arange(5))
+    coords = np.column_stack([xs.ravel(), ys.ravel()]).astype(float)
+
+    ord_default, dists_default = farthest_first_ordering(coords, start_index=0)
+    ord_random, dists_random = farthest_first_ordering(
+        coords, start_index=0, random_state=0
+    )
+
+    assert not np.array_equal(ord_default, ord_random)
+
+    # both orderings are permutations of all points
+    assert np.all(np.sort(ord_default) == np.arange(coords.shape[0]))
+    assert np.all(np.sort(ord_random) == np.arange(coords.shape[0]))
+
+    # separation distances, taken in selection order, must be non-increasing
+    # (after the start point)
+    for dists, ordering in [(dists_default, ord_default), (dists_random, ord_random)]:
+        ordered_dists = dists[ordering]
+        assert np.all(np.diff(ordered_dists[1:]) <= 0)
+
+
 def test_farthest_first_with_reference_point(locations_2d):
     ord, _ = farthest_first_ordering(
         locations_2d,
